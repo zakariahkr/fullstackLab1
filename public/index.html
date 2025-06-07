@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dish Recipes</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <h1>Dish Recipes</h1>
+
+    <!-- Add New Dish Form -->
+  <form id="add-form">
+    <input type="text" placeholder="Name" name="name" required>
+    <input type="text" placeholder="Ingredients (comma separated)" name="ingredients" required>
+    <input type="text" placeholder="Preparation Steps (comma separated)" name="preparationSteps" required>
+    <input type="text" placeholder="Cooking Time" name="cookingTime" required>
+    <input type="text" placeholder="Origin" name="origin" required>
+    <input type="text" placeholder="Difficulty" name="difficulty" required>
+    <button type="submit">Add Dish</button>
+  </form>
+
+  <hr>
+   <!-- Table of Dishes -->
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Ingredients</th>
+        <th>Preparation steps</th>
+        <th>Cooking Time</th>
+        <th>Origin</th>
+        <th>Difficulty</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="dish-table-body"></tbody>
+  </table>
+
+  <script>
+  const API_URL = '/api/dishes';
+  const tableBody = document.getElementById('dish-table-body');
+  const form = document.getElementById('add-form');
+
+  let editMode = false;
+  let editId = null;
+
+  async function loadDishes() {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    tableBody.innerHTML = '';
+    data.forEach(dish => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${dish.name}</td>
+        <td>${dish.ingredients.join(', ')}</td>
+        <td>${dish.preparationSteps.join(', ')}</td>
+        <td>${dish.cookingTime}</td>
+        <td>${dish.origin}</td>
+        <td>${dish.difficulty}</td>
+        <td>
+          <button onclick="startEditDish('${dish._id}', ${JSON.stringify(dish).replace(/"/g, '&quot;')})">Update</button>
+          <button onclick="deleteDish('${dish._id}')">Delete</button>
+        </td>
+      `;
+      tableBody.appendChild(row);
+    });
+  }
+
+  async function deleteDish(id) {
+    if (confirm('Are you sure you want to delete this dish?')) {
+      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      loadDishes();
+    }
+  }
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const dish = {
+      name: formData.get('name'),
+      ingredients: formData.get('ingredients').split(',').map(s => s.trim()),
+      preparationSteps: formData.get('preparationSteps').split(',').map(s => s.trim()),
+      cookingTime: formData.get('cookingTime'),
+      origin: formData.get('origin'),
+      difficulty: formData.get('difficulty')
+    };
+
+    if (editMode) {
+      // PUT request
+      await fetch(`${API_URL}/${editId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dish)
+      });
+      form.querySelector('button').innerText = 'Add Dish';
+      editMode = false;
+      editId = null;
+    } else {
+      // POST request
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dish)
+      });
+    }
+
+    form.reset();
+    loadDishes();
+  });
+
+  function startEditDish(id, dish) {
+    form.name.value = dish.name;
+    form.ingredients.value = dish.ingredients.join(', ');
+    form.preparationSteps.value = dish.preparationSteps.join(', ');
+    form.cookingTime.value = dish.cookingTime;
+    form.origin.value = dish.origin;
+    form.difficulty.value = dish.difficulty;
+
+    editMode = true;
+    editId = id;
+    form.querySelector('button').innerText = 'Update Dish';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  loadDishes();
+</script>
+</body>
+</html>
