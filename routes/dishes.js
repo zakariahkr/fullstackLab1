@@ -18,7 +18,7 @@ router.get('/:name', async (req, res) => {
     try {
         const dishName = await Dish.findOne({name: req.params.name});
         if (!dishName) return res.status(404).json({message:'Dish does not exist'})
-        res.json(dishNema);
+        res.json(dishName);
     } catch (err) {
         res.status(500).json({message: err.message});
     }
@@ -50,11 +50,11 @@ router.put('/:id', async (req, res) => {
 // DELETE/Delete a dish. Return 404 if it doesn't exist
 router.delete('/:id', async (req, res) => {
   try {
-    const deleteDish = await Dish.findByIdAndUpdate(req.params.id);
+    const deleteDish = await Dish.findByIdAndDelete(req.params.id);
     if (!deleteDish) return res.status(404).json({message:'Dish does not exist'});
     res.json({message:'Dish deleted successfully'});
   } catch (err) {
-    res.status(400).json({message: err.message});
+    res.status(500).json({message: err.message});
   }
 });
 
